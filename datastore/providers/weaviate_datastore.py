@@ -246,7 +246,6 @@ class WeaviateDataStore(DataStore):
                 result = DocumentChunkWithScore(
                     id=resp["chunk_id"],
                     text=resp["text"],
-                    embedding=resp["_additional"]["vector"],
                     score=resp["_additional"]["score"],
                     metadata=DocumentChunkMetadata(
                         document_id=resp["document_id"] if resp["document_id"] else "",
