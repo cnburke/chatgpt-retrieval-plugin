@@ -25,7 +25,6 @@ class DocumentChunk(BaseModel):
     id: Optional[str] = None
     text: str
     metadata: DocumentChunkMetadata
-    embedding: Optional[List[float]] = None
 
 
 class DocumentChunkWithScore(DocumentChunk):
