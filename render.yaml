@@ -25,7 +25,7 @@ services:
   # Weaviate vector database
   - type: pserv
     name: weaviate
-    region: oregonx
+    region: oregon
     plan: starter
     env: docker
     dockerfilePath: ./Dockerfile.weaviate
