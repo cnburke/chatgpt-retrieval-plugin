@@ -69,7 +69,8 @@ def login(request: Request, session_id: str = Form(...), api_key: str = Form(...
     """
     Handles login by setting a session cookie.
     """
-    response = Response()
+    response = HTMLResponse("<html><body><h2>Login Successful!</h2></body></html>")  # ✅ New: Display confirmation page instead of redirecting
+    
     if api_key != RABBIT_R1_API_KEY:
         raise HTTPException(status_code=403, detail="Invalid API Key")
 
@@ -77,8 +78,18 @@ def login(request: Request, session_id: str = Form(...), api_key: str = Form(...
         raise HTTPException(status_code=403, detail="Unauthorized Session ID")
 
     VALID_SESSIONS[session_id] = True
-    response.set_cookie(key="session_id", value=session_id, httponly=True)
-    return RedirectResponse(url="/", status_code=303)
+
+    # ✅ Ensure the cookie is set and visible to Rabbit R1
+    response.set_cookie(
+        key="session_id",
+        value=session_id,
+        httponly=False,  # ✅ Change to False for testing
+        secure=True,  # Ensures it's sent over HTTPS
+        samesite="Lax",  # Allows cross-site requests within limits
+        max_age=3600  # Expires in 1 hour
+    )
+
+    return response  # ✅ No redirect, so Rabbit R1 has time to store the cookie
 
 @app.post("/logout")
 def logout(request: Request, response: Response):
