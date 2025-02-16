@@ -100,18 +100,34 @@ def save_memory(request: Request, text: str = Form(...)):
     if not session_cookie or session_cookie not in VALID_SESSIONS or not VALID_SESSIONS[session_cookie]:
         return RedirectResponse(url="/", status_code=303)
     
+    # ✅ Ensure a valid `source` value (Default to "chat")
+    valid_sources = {"email", "file", "chat"}
+    source_value = "chat"  # Default to "chat" if not provided or invalid
+
     payload = {
         "documents": [
             {
                 "id": "rabbit_r1_" + str(hash(text)),
                 "text": text,
-                "metadata": {"source": "rabbit_r1"}
+                "metadata": {
+                    "source": source_value,  # ✅ Ensured valid source
+                    "source_id": "rabbit_r1",
+                    "url": "",
+                    "created_at": "2025-02-16T00:00:00Z",
+                    "author": "Rabbit R1",
+                    "document_id": "rabbit_r1_memory"
+                }
             }
         ]
     }
-    headers = {"Authorization": f"Bearer {API_KEY}", "Content-Type": "application/json"}
+
+    headers = {
+        "Authorization": f"Bearer {API_KEY}",
+        "Content-Type": "application/json"
+    }
+
     response = requests.post(f"{RETRIEVAL_PLUGIN_URL}/upsert", json=payload, headers=headers)
-    
+
     if response.status_code != 200:
         return f"Error: {response.text}"
     
