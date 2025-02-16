@@ -66,10 +66,11 @@ def home_page(request: Request):
 
 @app.post("/login")
 @limiter.limit("5/minute")  # Allow only 5 login attempts per minute
-def login(session_id: str = Form(...), api_key: str = Form(...), response: Response = Response()):
+def login(request: Request, session_id: str = Form(...), api_key: str = Form(...)):
     """
     Handles login by setting a session cookie.
     """
+    response = Response()
     if api_key != RABBIT_R1_API_KEY:
         raise HTTPException(status_code=403, detail="Invalid API Key")
 
@@ -92,7 +93,7 @@ def logout(request: Request, response: Response):
     return RedirectResponse(url="/", status_code=303)
 
 @app.post("/save", response_class=HTMLResponse)
-def save_memory(text: str = Form(...), request: Request = Request()):
+def save_memory(request: Request, text: str = Form(...)):
     """
     Receives a text memo from Rabbit R1 and stores it in the retrieval database.
     """
@@ -118,7 +119,7 @@ def save_memory(text: str = Form(...), request: Request = Request()):
     return "<html><body><h2>Memory saved successfully!</h2></body></html>"
 
 @app.post("/get", response_class=HTMLResponse)
-def get_memories(query: str = Form(...), request: Request = Request()):
+def get_memories(request: Request, query: str = Form(...)):
     """
     Retrieves stored memos based on a user query.
     """
