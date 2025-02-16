@@ -1,16 +1,31 @@
-from fastapi import FastAPI, HTTPException, Request, Response, Form, Depends
+from fastapi import FastAPI, HTTPException, Request, Response, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.middleware import SlowAPIMiddleware
 import requests
 import os
 
 app = FastAPI()
 
+# Initialize Rate Limiting
+limiter = Limiter(key_func=get_remote_address)
+app.state.limiter = limiter
+app.add_exception_handler(HTTPException, _rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
+
 # Retrieval Plugin API URL (Modify if needed)
 RETRIEVAL_PLUGIN_URL = os.getenv("RETRIEVAL_PLUGIN_URL", "https://your-app-url.com")
 API_KEY = os.getenv("RETRIEVAL_PLUGIN_API_KEY", "your-api-key")
 
+# Secure API key (Store this in an environment variable)
+RABBIT_R1_API_KEY = os.getenv("RABBIT_R1_API_KEY", "hitpur-gyxsuS-0tadku")
+
 # Simulated session storage for Rabbit R1 login
 VALID_SESSIONS = {}
+
+# Whitelist of allowed session IDs (Only known Rabbit R1 devices)
+ALLOWED_SESSION_IDS = {"rabbit-user-123", "trusted-r1-device"}
 
 @app.get("/", response_class=HTMLResponse)
 def home_page(request: Request):
@@ -18,8 +33,16 @@ def home_page(request: Request):
     Simple HTML interface for Rabbit R1 to interact with the retrieval plugin.
     """
     session_cookie = request.cookies.get("session_id")
-    logged_in = session_cookie in VALID_SESSIONS
-    login_section = ("<p>Logged in as Rabbit R1</p><form action='/logout' method='post'><button type='submit'>Logout</button></form>") if logged_in else ("<form action='/login' method='post'><label for='session_id'>Session ID:</label><input type='text' id='session_id' name='session_id' required><button type='submit'>Login</button></form>")
+    logged_in = session_cookie in VALID_SESSIONS and VALID_SESSIONS[session_cookie]
+    login_section = (
+        "<p>Logged in as Rabbit R1</p><form action='/logout' method='post'><button type='submit'>Logout</button></form>"
+        if logged_in
+        else "<form action='/login' method='post'><label for='session_id'>Session ID:</label>"
+             "<input type='text' id='session_id' name='session_id' required>"
+             "<label for='api_key'>API Key:</label>"
+             "<input type='password' id='api_key' name='api_key' required>"
+             "<button type='submit'>Login</button></form>"
+    )
     
     return f"""
     <html>
@@ -42,10 +65,17 @@ def home_page(request: Request):
     """
 
 @app.post("/login")
-def login(session_id: str = Form(...), response: Response = Response()):
+@limiter.limit("5/minute")  # Allow only 5 login attempts per minute
+def login(session_id: str = Form(...), api_key: str = Form(...), response: Response = Response()):
     """
     Handles login by setting a session cookie.
     """
+    if api_key != RABBIT_R1_API_KEY:
+        raise HTTPException(status_code=403, detail="Invalid API Key")
+
+    if session_id not in ALLOWED_SESSION_IDS:
+        raise HTTPException(status_code=403, detail="Unauthorized Session ID")
+
     VALID_SESSIONS[session_id] = True
     response.set_cookie(key="session_id", value=session_id, httponly=True)
     return RedirectResponse(url="/", status_code=303)
@@ -53,7 +83,7 @@ def login(session_id: str = Form(...), response: Response = Response()):
 @app.post("/logout")
 def logout(request: Request, response: Response):
     """
-    Logs the user out by clearing the session cookie.
+    Logs out the user by clearing the session cookie.
     """
     session_cookie = request.cookies.get("session_id")
     if session_cookie and session_cookie in VALID_SESSIONS:
@@ -62,12 +92,12 @@ def logout(request: Request, response: Response):
     return RedirectResponse(url="/", status_code=303)
 
 @app.post("/save", response_class=HTMLResponse)
-def save_memory(text: str = Form(...), request: Request = Depends()):
+def save_memory(text: str = Form(...), request: Request = Request()):
     """
     Receives a text memo from Rabbit R1 and stores it in the retrieval database.
     """
     session_cookie = request.cookies.get("session_id")
-    if session_cookie not in VALID_SESSIONS:
+    if not session_cookie or session_cookie not in VALID_SESSIONS or not VALID_SESSIONS[session_cookie]:
         return RedirectResponse(url="/", status_code=303)
     
     payload = {
@@ -88,12 +118,12 @@ def save_memory(text: str = Form(...), request: Request = Depends()):
     return "<html><body><h2>Memory saved successfully!</h2></body></html>"
 
 @app.post("/get", response_class=HTMLResponse)
-def get_memories(query: str = Form(...), request: Request = Depends()):
+def get_memories(query: str = Form(...), request: Request = Request()):
     """
     Retrieves stored memos based on a user query.
     """
     session_cookie = request.cookies.get("session_id")
-    if session_cookie not in VALID_SESSIONS:
+    if not session_cookie or session_cookie not in VALID_SESSIONS or not VALID_SESSIONS[session_cookie]:
         return RedirectResponse(url="/", status_code=303)
     
     payload = {"queries": [{"query": query}]}
