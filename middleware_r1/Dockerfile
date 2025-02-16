@@ -1,16 +1,19 @@
-# Use the correct Python version
+# Use Python 3.10+ to match your project requirements
 FROM python:3.10
 
 WORKDIR /app
 
-# Install Poetry
-RUN curl -sSL https://install.python-poetry.org | python3 - \
-    && export PATH="/root/.local/bin:$PATH"
+# Install Poetry explicitly
+RUN curl -sSL https://install.python-poetry.org | python3 - && \
+    export PATH="/root/.local/bin:$PATH"
+
+# Ensure Poetry is available in the current shell session
+ENV PATH="/root/.local/bin:$PATH"
 
 # Copy dependency files
 COPY pyproject.toml poetry.lock ./
 
-# Install dependencies
+# Install dependencies using Poetry
 RUN poetry install --no-root
 
 # Copy app files
