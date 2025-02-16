@@ -47,14 +47,14 @@ services:
         value: node1
 
   # Rabbit R1 Middleware
-    - type: web
-      name: rabbit-r1-middleware
-      region: oregon
-      plan: starter
-      env: docker
-      dockerfilePath: middleware_r1/Dockerfile
-      envVars:
-        - key: RETRIEVAL_PLUGIN_URL
-          sync: false
-        - key: RETRIEVAL_PLUGIN_API_KEY
-          sync: false
+  - type: web
+    name: rabbit-r1-middleware
+    region: oregon
+    plan: starter
+    env: docker
+    dockerfilePath: middleware_r1/Dockerfile
+    envVars:
+      - key: RETRIEVAL_PLUGIN_URL
+        sync: false
+      - key: RETRIEVAL_PLUGIN_API_KEY
+        sync: false
