@@ -1,18 +1,9 @@
 from fastapi import FastAPI, HTTPException, Request, Response, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
-from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.util import get_remote_address
-from slowapi.middleware import SlowAPIMiddleware
 import requests
 import os
 
 app = FastAPI()
-
-# Initialize Rate Limiting (Disabled for Debugging)
-limiter = Limiter(key_func=get_remote_address)
-app.state.limiter = limiter
-app.add_exception_handler(HTTPException, _rate_limit_exceeded_handler)
-#app.add_middleware(SlowAPIMiddleware)
 
 # Retrieval Plugin API URL (Modify if needed)
 RETRIEVAL_PLUGIN_URL = os.getenv("RETRIEVAL_PLUGIN_URL", "https://your-app-url.com")
@@ -28,11 +19,9 @@ VALID_SESSIONS = {}
 ALLOWED_SESSION_IDS = {"rabbit-user-123", "trusted-r1-device"}
 
 @app.get("/", response_class=HTMLResponse)
-@app.head("/")
 def home_page(request: Request):
     """
     Simple HTML interface for Rabbit R1 to interact with the retrieval plugin.
-    Allows HEAD requests for Render's health check.
     """
     session_cookie = request.cookies.get("session_id")
     logged_in = session_cookie in VALID_SESSIONS and VALID_SESSIONS[session_cookie]
@@ -72,6 +61,7 @@ def login(request: Request, session_id: str = Form(...), api_key: str = Form(...
     Handles login by setting a session cookie.
     """
     response = Response()
+    
     if api_key != RABBIT_R1_API_KEY:
         raise HTTPException(status_code=403, detail="Invalid API Key")
 
