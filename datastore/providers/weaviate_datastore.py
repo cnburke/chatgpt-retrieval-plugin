@@ -243,13 +243,16 @@ class WeaviateDataStore(DataStore):
             response = result["data"]["Get"][WEAVIATE_CLASS]
 
             for resp in response:
+                # ✅ Fix: Set a default value if `source` is None
+                source_value = resp["source"] if resp["source"] is not None else "unknown"
+
                 result = DocumentChunkWithScore(
                     id=resp["chunk_id"],
                     text=resp["text"],
                     score=resp["_additional"]["score"],
                     metadata=DocumentChunkMetadata(
                         document_id=resp["document_id"] if resp["document_id"] else "",
-                        source=Source(resp["source"]),
+                        source=Source(source_value),  # Ensure `Source` gets a valid value
                         source_id=resp["source_id"],
                         url=resp["url"],
                         created_at=resp["created_at"],
