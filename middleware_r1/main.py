@@ -5,6 +5,10 @@ import os
 
 app = FastAPI()
 
+@app.get("/", response_class=HTMLResponse)
+def home():
+    return "<html><body><h1>Rabbit R1 Middleware Running</h1></body></html>"
+
 # Retrieval Plugin API URL (Modify if needed)
 RETRIEVAL_PLUGIN_URL = os.getenv("RETRIEVAL_PLUGIN_URL", "https://your-app-url.com")
 API_KEY = os.getenv("RETRIEVAL_PLUGIN_API_KEY", "your-api-key")
