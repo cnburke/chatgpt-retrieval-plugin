@@ -8,7 +8,7 @@ import os
 
 app = FastAPI()
 
-# Initialize Rate Limiting
+# Initialize Rate Limiting (Disabled for Debugging)
 limiter = Limiter(key_func=get_remote_address)
 app.state.limiter = limiter
 app.add_exception_handler(HTTPException, _rate_limit_exceeded_handler)
@@ -65,18 +65,11 @@ def home_page(request: Request):
     """
 
 @app.post("/login")
-@limiter.limit("5/minute")  # Allow only 5 login attempts per minute
 def login(request: Request, session_id: str = Form(...), api_key: str = Form(...)):
     """
     Handles login by setting a session cookie.
     """
-
-    # Skip rate limiting if it's a Render health check (HEAD requests)
-    if request.client.host == "127.0.0.1" or request.headers.get("User-Agent") == "Render":
-        return {"message": "Render health check bypassed"}
-
     response = Response()
-
     if api_key != RABBIT_R1_API_KEY:
         raise HTTPException(status_code=403, detail="Invalid API Key")
 
