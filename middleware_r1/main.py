@@ -1,28 +1,32 @@
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI, HTTPException, Request, Response, Form, Depends
+from fastapi.responses import HTMLResponse, RedirectResponse
 import requests
 import os
 
 app = FastAPI()
 
-@app.get("/", response_class=HTMLResponse)
-def home():
-    return "<html><body><h1>Rabbit R1 Middleware Running</h1></body></html>"
-
 # Retrieval Plugin API URL (Modify if needed)
 RETRIEVAL_PLUGIN_URL = os.getenv("RETRIEVAL_PLUGIN_URL", "https://your-app-url.com")
 API_KEY = os.getenv("RETRIEVAL_PLUGIN_API_KEY", "your-api-key")
 
+# Simulated session storage for Rabbit R1 login
+VALID_SESSIONS = {}
+
 @app.get("/", response_class=HTMLResponse)
-def home_page():
+def home_page(request: Request):
     """
     Simple HTML interface for Rabbit R1 to interact with the retrieval plugin.
     """
-    return """
+    session_cookie = request.cookies.get("session_id")
+    logged_in = session_cookie in VALID_SESSIONS
+    login_section = ("<p>Logged in as Rabbit R1</p><form action='/logout' method='post'><button type='submit'>Logout</button></form>") if logged_in else ("<form action='/login' method='post'><label for='session_id'>Session ID:</label><input type='text' id='session_id' name='session_id' required><button type='submit'>Login</button></form>")
+    
+    return f"""
     <html>
     <head><title>Rabbit R1 Memory Interface</title></head>
     <body>
         <h1>Rabbit R1 Memory Interface</h1>
+        {login_section}
         <form action="/save" method="post">
             <label for="text">Enter Memory:</label>
             <input type="text" id="text" name="text" required>
@@ -37,11 +41,35 @@ def home_page():
     </html>
     """
 
+@app.post("/login")
+def login(session_id: str = Form(...), response: Response = Response()):
+    """
+    Handles login by setting a session cookie.
+    """
+    VALID_SESSIONS[session_id] = True
+    response.set_cookie(key="session_id", value=session_id, httponly=True)
+    return RedirectResponse(url="/", status_code=303)
+
+@app.post("/logout")
+def logout(request: Request, response: Response):
+    """
+    Logs the user out by clearing the session cookie.
+    """
+    session_cookie = request.cookies.get("session_id")
+    if session_cookie and session_cookie in VALID_SESSIONS:
+        del VALID_SESSIONS[session_cookie]
+    response.delete_cookie("session_id")
+    return RedirectResponse(url="/", status_code=303)
+
 @app.post("/save", response_class=HTMLResponse)
-def save_memory(text: str):
+def save_memory(text: str = Form(...), request: Request = Depends()):
     """
     Receives a text memo from Rabbit R1 and stores it in the retrieval database.
     """
+    session_cookie = request.cookies.get("session_id")
+    if session_cookie not in VALID_SESSIONS:
+        return RedirectResponse(url="/", status_code=303)
+    
     payload = {
         "documents": [
             {
@@ -51,7 +79,6 @@ def save_memory(text: str):
             }
         ]
     }
-
     headers = {"Authorization": f"Bearer {API_KEY}"}
     response = requests.post(f"{RETRIEVAL_PLUGIN_URL}/upsert", json=payload, headers=headers)
     
@@ -61,10 +88,14 @@ def save_memory(text: str):
     return "<html><body><h2>Memory saved successfully!</h2></body></html>"
 
 @app.post("/get", response_class=HTMLResponse)
-def get_memories(query: str):
+def get_memories(query: str = Form(...), request: Request = Depends()):
     """
     Retrieves stored memos based on a user query.
     """
+    session_cookie = request.cookies.get("session_id")
+    if session_cookie not in VALID_SESSIONS:
+        return RedirectResponse(url="/", status_code=303)
+    
     payload = {"queries": [{"query": query}]}
     headers = {"Authorization": f"Bearer {API_KEY}"}
     response = requests.post(f"{RETRIEVAL_PLUGIN_URL}/query", json=payload, headers=headers)
