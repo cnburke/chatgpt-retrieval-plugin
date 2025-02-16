@@ -25,7 +25,7 @@ services:
   # Weaviate vector database
   - type: pserv
     name: weaviate
-    region: oregon
+    region: oregonx
     plan: starter
     env: docker
     dockerfilePath: ./Dockerfile.weaviate
@@ -45,3 +45,16 @@ services:
         value: none
       - key: CLUSTER_HOSTNAME
         value: node1
+
+  # Rabbit R1 Middleware
+    - type: web
+      name: rabbit-r1-middleware
+      region: oregon
+      plan: starter
+      env: docker
+      dockerfilePath: middleware_r1/Dockerfile
+      envVars:
+        - key: RETRIEVAL_PLUGIN_URL
+          sync: false
+        - key: RETRIEVAL_PLUGIN_API_KEY
+          sync: false
