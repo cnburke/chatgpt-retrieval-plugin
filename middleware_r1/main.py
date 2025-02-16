@@ -1,9 +1,18 @@
 from fastapi import FastAPI, HTTPException, Request, Response, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.middleware import SlowAPIMiddleware
 import requests
 import os
 
 app = FastAPI()
+
+# Initialize Rate Limiting (Disabled for Debugging)
+limiter = Limiter(key_func=get_remote_address)
+app.state.limiter = limiter
+app.add_exception_handler(HTTPException, _rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
 
 # Retrieval Plugin API URL (Modify if needed)
 RETRIEVAL_PLUGIN_URL = os.getenv("RETRIEVAL_PLUGIN_URL", "https://your-app-url.com")
@@ -60,8 +69,7 @@ def login(request: Request, session_id: str = Form(...), api_key: str = Form(...
     """
     Handles login by setting a session cookie.
     """
-    response = RedirectResponse(url="/", status_code=303)
-
+    response = Response()
     if api_key != RABBIT_R1_API_KEY:
         raise HTTPException(status_code=403, detail="Invalid API Key")
 
@@ -69,18 +77,8 @@ def login(request: Request, session_id: str = Form(...), api_key: str = Form(...
         raise HTTPException(status_code=403, detail="Unauthorized Session ID")
 
     VALID_SESSIONS[session_id] = True
-
-    # Updated: Explicitly setting cookie attributes
-    response.set_cookie(
-        key="session_id",
-        value=session_id,
-        httponly=False,  # Change from True to False for testing visibility
-        secure=True,  # Ensures it's only sent over HTTPS
-        samesite="Lax",  # Allows cross-site requests within limits
-        max_age=3600  # Cookie expires in 1 hour
-    )
-    
-    return response
+    response.set_cookie(key="session_id", value=session_id, httponly=True)
+    return RedirectResponse(url="/", status_code=303)
 
 @app.post("/logout")
 def logout(request: Request, response: Response):
@@ -111,7 +109,7 @@ def save_memory(request: Request, text: str = Form(...)):
             }
         ]
     }
-    headers = {"Authorization": f"Bearer {API_KEY}"}
+    headers = {"Authorization": f"Bearer {API_KEY}", "Content-Type": "application/json"}
     response = requests.post(f"{RETRIEVAL_PLUGIN_URL}/upsert", json=payload, headers=headers)
     
     if response.status_code != 200:
@@ -129,7 +127,7 @@ def get_memories(request: Request, query: str = Form(...)):
         return RedirectResponse(url="/", status_code=303)
     
     payload = {"queries": [{"query": query}]}
-    headers = {"Authorization": f"Bearer {API_KEY}"}
+    headers = {"Authorization": f"Bearer {API_KEY}", "Content-Type": "application/json"}
     response = requests.post(f"{RETRIEVAL_PLUGIN_URL}/query", json=payload, headers=headers)
     
     if response.status_code != 200:
