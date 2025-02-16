@@ -12,7 +12,7 @@ app = FastAPI()
 limiter = Limiter(key_func=get_remote_address)
 app.state.limiter = limiter
 app.add_exception_handler(HTTPException, _rate_limit_exceeded_handler)
-app.add_middleware(SlowAPIMiddleware)
+#app.add_middleware(SlowAPIMiddleware)
 
 # Retrieval Plugin API URL (Modify if needed)
 RETRIEVAL_PLUGIN_URL = os.getenv("RETRIEVAL_PLUGIN_URL", "https://your-app-url.com")
