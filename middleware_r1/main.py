@@ -28,9 +28,11 @@ VALID_SESSIONS = {}
 ALLOWED_SESSION_IDS = {"rabbit-user-123", "trusted-r1-device"}
 
 @app.get("/", response_class=HTMLResponse)
+@app.head("/")
 def home_page(request: Request):
     """
     Simple HTML interface for Rabbit R1 to interact with the retrieval plugin.
+    Allows HEAD requests for Render's health check.
     """
     session_cookie = request.cookies.get("session_id")
     logged_in = session_cookie in VALID_SESSIONS and VALID_SESSIONS[session_cookie]
