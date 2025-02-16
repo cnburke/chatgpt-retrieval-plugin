@@ -60,8 +60,8 @@ def login(request: Request, session_id: str = Form(...), api_key: str = Form(...
     """
     Handles login by setting a session cookie.
     """
-    response = Response()
-    
+    response = RedirectResponse(url="/", status_code=303)
+
     if api_key != RABBIT_R1_API_KEY:
         raise HTTPException(status_code=403, detail="Invalid API Key")
 
@@ -69,8 +69,18 @@ def login(request: Request, session_id: str = Form(...), api_key: str = Form(...
         raise HTTPException(status_code=403, detail="Unauthorized Session ID")
 
     VALID_SESSIONS[session_id] = True
-    response.set_cookie(key="session_id", value=session_id, httponly=True)
-    return RedirectResponse(url="/", status_code=303)
+
+    # Updated: Explicitly setting cookie attributes
+    response.set_cookie(
+        key="session_id",
+        value=session_id,
+        httponly=False,  # Change from True to False for testing visibility
+        secure=True,  # Ensures it's only sent over HTTPS
+        samesite="Lax",  # Allows cross-site requests within limits
+        max_age=3600  # Cookie expires in 1 hour
+    )
+    
+    return response
 
 @app.post("/logout")
 def logout(request: Request, response: Response):
