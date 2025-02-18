@@ -3,7 +3,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.middleware import SlowAPIMiddleware
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import requests
 import os
 
@@ -68,9 +68,9 @@ def home_page(request: Request):
 @app.post("/login")
 def login(request: Request, session_id: str = Form(...), api_key: str = Form(...)):
     """
-    Handles login by setting a session cookie.
+    Handles login by setting a persistent session cookie.
     """
-    response = HTMLResponse("<html><body><h2>Login Successful!</h2></body></html>")  # Keep confirmation page
+    response = HTMLResponse("<html><body><h2>Login Successful!</h2></body></html>")  
 
     if api_key != RABBIT_R1_API_KEY:
         raise HTTPException(status_code=403, detail="Invalid API Key")
@@ -80,18 +80,17 @@ def login(request: Request, session_id: str = Form(...), api_key: str = Form(...
 
     VALID_SESSIONS[session_id] = True
 
-    # ✅ Corrected expiration time (30 days from now)
-    expiration_time = datetime.utcnow() + timedelta(days=30)
+    # ✅ Use datetime.now(timezone.utc) to avoid deprecation issues
+    expiration_time = datetime.now(timezone.utc) + timedelta(days=30)
 
-    # ✅ Adjusted cookie settings to work with Rabbit R1's Chrome
     response.set_cookie(
         key="session_id",
         value=session_id,
         httponly=True,  # Keeps it secure
         secure=True,  # Works only if site runs over HTTPS
         samesite="None",  # Required for cross-origin cookies
-        max_age=2592000,  # 30 days
-        expires=int(expiration_time.timestamp())  # ✅ Use a valid future timestamp
+        max_age=2592000,  # 30 days in seconds
+        expires=expiration_time.strftime("%a, %d %b %Y %H:%M:%S GMT")  # ✅ Explicitly setting GMT formatted expiration
     )
 
     return response
