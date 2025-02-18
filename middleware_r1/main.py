@@ -86,7 +86,8 @@ def login(request: Request, session_id: str = Form(...), api_key: str = Form(...
         httponly=False,  # ✅ Allow JS access for debugging
         secure=False,  # ❌ Disable secure flag (Rabbit R1 may reject secure cookies)
         samesite="None",  # ✅ Allow cross-site cookie storage
-        max_age=2592000  # Expire in 1 hour
+        max_age=2592000,  # Expire in 1 hour
+        expires=2592000
     )
 
     return response
