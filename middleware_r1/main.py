@@ -3,6 +3,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.middleware import SlowAPIMiddleware
+from datetime import datetime, timedelta
 import requests
 import os
 
@@ -79,15 +80,18 @@ def login(request: Request, session_id: str = Form(...), api_key: str = Form(...
 
     VALID_SESSIONS[session_id] = True
 
+    # ✅ Corrected expiration time (30 days from now)
+    expiration_time = datetime.utcnow() + timedelta(days=30)
+
     # ✅ Adjusted cookie settings to work with Rabbit R1's Chrome
     response.set_cookie(
         key="session_id",
         value=session_id,
-        httponly=False,  # ✅ Allow JS access for debugging
-        secure=False,  # ❌ Disable secure flag (Rabbit R1 may reject secure cookies)
-        samesite="None",  # ✅ Allow cross-site cookie storage
-        max_age=2592000,  # Expire in 1 hour
-        expires=2592000
+        httponly=True,  # Keeps it secure
+        secure=True,  # Works only if site runs over HTTPS
+        samesite="None",  # Required for cross-origin cookies
+        max_age=2592000,  # 30 days
+        expires=int(expiration_time.timestamp())  # ✅ Use a valid future timestamp
     )
 
     return response
