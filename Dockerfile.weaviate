@@ -1,8 +1,12 @@
-FROM semitechnologies/weaviate:1.18.3
+FROM ubuntu:20.04  # Use Ubuntu instead of the Weaviate base image
 
-# Install necessary packages
-RUN apt update && apt install -y nginx wget && \
+# Install Weaviate and dependencies
+RUN apt update && apt install -y wget nginx curl && \
     rm -rf /var/lib/apt/lists/*
+
+# Install Weaviate manually
+RUN wget -q https://github.com/semi-technologies/weaviate/releases/download/v1.18.3/weaviate-linux-amd64 -O /usr/local/bin/weaviate && \
+    chmod +x /usr/local/bin/weaviate
 
 # Copy custom Nginx config
 COPY nginx.conf /etc/nginx/sites-enabled/default
@@ -15,4 +19,4 @@ RUN wget -O playground.tar.gz https://github.com/RVledder/weaviate-playground/re
 EXPOSE 8080 80
 
 # Start Nginx and Weaviate
-CMD service nginx start && /weaviate
+CMD service nginx start && weaviate
