@@ -1,4 +1,5 @@
-FROM ubuntu:20.04  # Use Ubuntu instead of the Weaviate base image
+# Use Ubuntu instead of the Weaviate base image
+FROM ubuntu:20.04
 
 # Install Weaviate and dependencies
 RUN apt update && apt install -y wget nginx curl && \
