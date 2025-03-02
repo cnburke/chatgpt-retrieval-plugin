@@ -34,12 +34,12 @@ WEAVIATE_BATCH_TIMEOUT_RETRIES = int(os.environ.get("WEAVIATE_TIMEOUT_RETRIES", 
 WEAVIATE_BATCH_NUM_WORKERS = int(os.environ.get("WEAVIATE_BATCH_NUM_WORKERS", 1))
 
 SCHEMA = {
-    "className": WEAVIATE_CLASS,
+    "class": WEAVIATE_CLASS,
     "description": "The main class",
     "properties": [
         {
             "name": "chunk_id",
-            "dataType": ["text"],
+            "dataType": ["string"],
             "description": "The chunk id",
         },
         {
