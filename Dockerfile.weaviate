@@ -1,1 +1,18 @@
 FROM semitechnologies/weaviate:1.18.3
+
+# Install necessary packages
+RUN apt update && apt install -y nginx wget && \
+    rm -rf /var/lib/apt/lists/*
+
+# Copy custom Nginx config
+COPY nginx.conf /etc/nginx/sites-enabled/default
+
+# Download and extract Weaviate Playground UI
+RUN wget -O playground.tar.gz https://github.com/RVledder/weaviate-playground/releases/latest/download/playground.tar.gz && \
+    tar -xzf playground.tar.gz -C /usr/share/nginx/html/
+
+# Expose Weaviate (8080) and Playground UI (80)
+EXPOSE 8080 80
+
+# Start Nginx and Weaviate
+CMD service nginx start && /weaviate
