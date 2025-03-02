@@ -41,4 +41,4 @@ COPY nginx.conf /etc/nginx/sites-enabled/default
 EXPOSE 8080 80
 
 # Start both Weaviate and Nginx, ensuring Weaviate doesn't exit
-CMD ["sh", "-c", "service nginx start && weaviate --host 0.0.0.0 --port 8080 || tail -f /dev/null"]
+CMD ["sh", "-c", "service nginx start && weaviate --host 0.0.0.0 --port ${PORT} || tail -f /dev/null"]
