@@ -39,7 +39,7 @@ SCHEMA = {
     "properties": [
         {
             "name": "chunk_id",
-            "dataType": ["string"],
+            "dataType": ["text"],
             "description": "The chunk id",
         },
         {
