@@ -1,32 +1,45 @@
-
-FROM python:3.10 as requirements-stage
+FROM python:3.11.12 as requirements-stage
 
 WORKDIR /tmp
 
+# Install Poetry
 RUN pip install poetry
 
+# Add your pyproject + lock file
 COPY ./pyproject.toml ./poetry.lock* /tmp/
 
+# Add Poetry plugin and export requirements
+RUN poetry self add poetry-plugin-export && \
+    poetry export -f requirements.txt --output requirements.txt --without-hashes
 
-RUN poetry self add poetry-plugin-export && poetry export -f requirements.txt --output requirements.txt --without-hashes
-
-FROM python:3.10
+# --- Runtime stage ---
+FROM python:3.11.12
 
 WORKDIR /code
 
+# Install system dependencies for building `tiktoken`
+RUN apt-get update && apt-get install -y \
+    curl \
+    build-essential \
+    gcc \
+    && curl https://sh.rustup.rs -sSf | sh -s -- -y \
+    && apt-get clean
+
+# Add Rust to PATH
+ENV PATH="/root/.cargo/bin:$PATH"
+
+# Copy requirements from build stage
 COPY --from=requirements-stage /tmp/requirements.txt /code/requirements.txt
 
+# Install everything — now works even for source-built packages like `tiktoken`
 RUN pip install --no-cache-dir --upgrade -r /code/requirements.txt
 
+# Copy source code
 COPY . /code/
 
+# Replace app URL
 ARG RENDER_EXTERNAL_HOSTNAME
-# This finds instances of the placeholder domain and replaces them with the actual domain
 RUN grep -rl "your-app-url.com" . | xargs sed -i "s/your-app-url.com/${RENDER_EXTERNAL_HOSTNAME}/g"
 
-# The Blueprint file can inject the hostname into the environment, but source code expects http://hostname format
-ARG WEAVIATE_HOSTNAME
-ENV WEAVIATE_HOST=http://${WEAVIATE_HOSTNAME}
-
-# Render and Heroku use PORT, Azure App Services uses WEBSITES_PORT, Fly.io uses 8080 by default
+# Run app
 CMD ["sh", "-c", "uvicorn server.main:app --host 0.0.0.0 --port ${PORT:-${WEBSITES_PORT:-8080}}"]

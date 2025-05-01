@@ -21,8 +21,7 @@ from models.models import (
 )
 
 
-WEAVIATE_HOST = os.environ.get("WEAVIATE_HOST", "http://127.0.0.1")
-WEAVIATE_PORT = os.environ.get("WEAVIATE_PORT", "8080")
+WEAVIATE_HOST = os.environ.get("WEAVIATE_HOST", "http://127.0.0.1:8080")
 WEAVIATE_USERNAME = os.environ.get("WEAVIATE_USERNAME", None)
 WEAVIATE_PASSWORD = os.environ.get("WEAVIATE_PASSWORD", None)
 WEAVIATE_SCOPES = os.environ.get("WEAVIATE_SCOPES", "offline_access")
@@ -109,7 +108,7 @@ class WeaviateDataStore(DataStore):
     def __init__(self):
         auth_credentials = self._build_auth_credentials()
 
-        url = f"{WEAVIATE_HOST}:{WEAVIATE_PORT}"
+        url = f"{WEAVIATE_HOST}"
 
         logger.debug(
             f"Connecting to weaviate instance at {url} with credential type {type(auth_credentials).__name__}"

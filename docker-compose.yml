@@ -1,0 +1,38 @@
+services:
+  weaviate:
+    image: semitechnologies/weaviate:1.24.10
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    environment:
+      - QUERY_DEFAULTS_LIMIT=${QUERY_DEFAULTS_LIMIT}
+      - AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED=${AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED}
+      - PERSISTENCE_DATA_PATH=${PERSISTENCE_DATA_PATH}
+      - DEFAULT_VECTORIZER_MODULE=${DEFAULT_VECTORIZER_MODULE}
+      - ENABLE_MODULES=${DEFAULT_VECTORIZER_MODULE}
+      - OPENAI_APIKEY=${OPENAI_API_KEY}
+    volumes:
+      - ${WEAVIATE_VOLUME_PATH}:/var/lib/weaviate
+
+  retrieval-plugin:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8080"
+    env_file:
+      - .env
+    environment:
+      - WEAVIATE_HOST=${WEAVIATE_HOST}
+      - BEARER_TOKEN=${BEARER_TOKEN}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - DATASTORE=${DATASTORE}
+    depends_on:
+      - weaviate
+    volumes:
+      - .:/app
+    command: sh -c "uvicorn server.main:app --host 0.0.0.0 --port 8080 --reload"
+
+volumes:
+  weaviate_data:
