@@ -1,4 +1,4 @@
-FROM python:3.11.12 as requirements-stage
+FROM python:3.11.12-slim as requirements-stage
 
 WORKDIR /tmp
 
@@ -12,8 +12,8 @@ COPY ./pyproject.toml ./poetry.lock* /tmp/
 RUN poetry self add poetry-plugin-export && \
     poetry export -f requirements.txt --output requirements.txt --without-hashes
 
-# --- Runtime stage ---
-FROM python:3.11.12
+# --- Runtime stage --- 
+FROM python:3.11.12-slim
 
 WORKDIR /code
 
@@ -30,6 +30,8 @@ ENV PATH="/root/.cargo/bin:$PATH"
 
 # Copy requirements from build stage
 COPY --from=requirements-stage /tmp/requirements.txt /code/requirements.txt
+
+RUN echo "======== REQUIREMENTS.TXT ========" >&2 && cat /code/requirements.txt >&2 && echo "==================================" >&2
 
 # Install everything — now works even for source-built packages like `tiktoken`
 RUN pip install --no-cache-dir --upgrade -r /code/requirements.txt
