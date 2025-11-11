@@ -242,8 +242,15 @@ class WeaviateDataStore(DataStore):
             response = result["data"]["Get"][WEAVIATE_CLASS]
 
             for resp in response:
-                # ✅ Fix: Set a default value if `source` is None
-                source_value = resp["source"] if resp["source"] is not None else "unknown"
+                source_raw = resp.get("source")
+                source_enum = None
+                if source_raw:
+                    try:
+                        source_enum = Source(source_raw)
+                    except ValueError:
+                        logger.warning(
+                            "Received document chunk with unexpected source '%s'", source_raw
+                        )
 
                 result = DocumentChunkWithScore(
                     id=resp["chunk_id"],
@@ -251,7 +258,7 @@ class WeaviateDataStore(DataStore):
                     score=resp["_additional"]["score"],
                     metadata=DocumentChunkMetadata(
                         document_id=resp["document_id"] if resp["document_id"] else "",
-                        source=Source(source_value),  # Ensure `Source` gets a valid value
+                        source=source_enum,
                         source_id=resp["source_id"],
                         url=resp["url"],
                         created_at=resp["created_at"],
