@@ -7,6 +7,10 @@ class Source(str, Enum):
     email = "email"
     file = "file"
     chat = "chat"
+    guardian = "guardian"
+    jeena = "jeena"
+    elliot = "elliot"
+    oscp = "oscp"
 
 
 class DocumentMetadata(BaseModel):
