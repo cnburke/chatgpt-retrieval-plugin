@@ -7,10 +7,19 @@ class Source(str, Enum):
     email = "email"
     file = "file"
     chat = "chat"
-    guardian = "guardian"
+    personal = "personal"
+    therapy = "therapy"
     jeena = "jeena"
     elliot = "elliot"
+    guardian = "guardian"
+    career = "career"
     oscp = "oscp"
+    test = "test"
+    chatgpt_relationship = "chatgpt_relationship"
+    journal = "journal"
+    general = "general"
+    music = "music"
+    tasks = "tasks"
 
 
 class DocumentMetadata(BaseModel):
